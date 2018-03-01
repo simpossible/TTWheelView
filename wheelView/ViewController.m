@@ -25,12 +25,14 @@
 }
 
 - (void)initialUI {
-    self.wheel = [[TTWheelView alloc] initWithradiu:300 divitionCount:10];
+//    self.wheel = [[TTWheelView alloc] initWithradiu:230 divitionCount:10];
+    self.wheel = [TTWheelView wheelWithCrossWidth:self.view.frame.size.width widthCrossHeight:50 withPartNumber:5];
     [self.view addSubview:self.wheel];
     
+    CGFloat off = self.wheel.radiu - 150;
     [self.wheel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.centerX.equalTo(self.view.mas_centerX);
-        make.centerY.equalTo(self.view.mas_bottom);
+        make.centerY.equalTo(self.view.mas_bottom).offset(off);
     }];
     
 //    self.wheel.pageArc = M_PI * 2/3;
@@ -45,12 +47,12 @@
 
 
 - (CGSize)sizeForItemAtIndex:(NSInteger)index {
-    return CGSizeMake(50, 50);
+    return CGSizeMake(50, 80);
 }
 
 
 - (CGFloat)radiuForIndex:(NSInteger)index {
-    return 150;
+    return self.wheel.radiu - 40;
 }
 
 

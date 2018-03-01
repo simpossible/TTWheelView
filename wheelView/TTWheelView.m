@@ -38,14 +38,6 @@
 
 @property (nonatomic, strong) TTWheelCell * cell;
 
-@property (nonatomic, strong) NSMutableArray * visibleCells;
-
-@property (nonatomic, strong) NSMutableArray * unvisibleCells;
-
-@property (nonatomic, assign) NSInteger leftAppearIndex;
-
-@property (nonatomic, assign) NSInteger rightAppearIndex;
-
 /**是否可以从缓存拿数据*/
 @property (nonatomic, assign) BOOL isCanDequeen;
 
@@ -69,11 +61,22 @@
     return self;
 }
 
+
++ (instancetype)wheelWithCrossWidth:(CGFloat)width widthCrossHeight:(CGFloat)height withPartNumber:(NSInteger)number {
+    CGFloat a = height;
+    CGFloat b = width/2;
+    CGFloat radiu = (a * a + b * b)/(2*a);
+    CGFloat sinAlfa = b /radiu;
+    CGFloat angel = asin(sinAlfa) * 2;
+    NSInteger totoalNumber = number * 2 *M_PI / angel;
+    TTWheelView *wheel = [[TTWheelView alloc] initWithradiu:radiu divitionCount:totoalNumber+1];
+    return wheel;
+    
+}
+
 - (void)initialData {
     self.perimeter =  M_PI * self.radiu * 2;
     self.cellCache = [NSMutableDictionary dictionary];
-    self.visibleCells = [NSMutableArray array];
-    self.unvisibleCells = [NSMutableArray array];
     self.allCells = [NSMutableArray array];
 }
 
@@ -85,6 +88,15 @@
         make.width.mas_equalTo(self.radiu * 2);
         make.height.mas_equalTo(self.radiu * 2);
     }];
+    self.backgroundColor = [UIColor clearColor];
+    [self initialmask];
+}
+
+- (void)initialmask {
+    UIBezierPath *path = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(0, 0, self.radiu*2, self.radiu*2)];
+    CAShapeLayer *shape = [CAShapeLayer layer];
+    shape.path = path.CGPath;
+    self.layer.mask = shape;
 }
 
 - (void)initialScrollView {
@@ -121,13 +133,12 @@
     for (; i < self.divitionCount; i ++) {
         TTWheelCell * cell =  [self.dataSource cellAtIndex:i forWheel:self];
         [self addCell:cell forDataIndex:i andPartIndex:i];
-        [self.allCells addObject:cell];
+        if (![self.allCells containsObject:cell]) {
+            [self.allCells addObject:cell];
+        }
         if (!cell.visible) {
-            [self.unvisibleCells addObject:cell];
-            self.rightAppearIndex = i;
             break;
         }
-        [self.visibleCells addObject:cell];
     }
     
     if (i < self.divitionCount -1) {
@@ -138,11 +149,8 @@
             [self addCell:cell forDataIndex:dataindex andPartIndex:j];
             [self.allCells insertObject:cell atIndex:0];
             if (!cell.visible) {
-                [self.unvisibleCells insertObject:cell atIndex:0];
-                self.leftAppearIndex = dataindex;
                 break;
             }
-            [self.visibleCells insertObject:cell atIndex:0];
             self.cell = cell;
         }
     }
@@ -212,6 +220,7 @@
 
 - (void)enqueenCell:(TTWheelCell *)cell {
     NSMutableArray *cells = [self.cellCache objectForKey:cell.identifre];
+    cell.hidden = YES;
     if (!cells) {
         cells = [NSMutableArray array];
     }
@@ -230,9 +239,6 @@
 
     CGPoint offset = scrollView.contentOffset;
     CGFloat velocy = offset.x - self.lastOffset.x;
-    NSLog(@"velocy is----- %f",velocy);
-    
-  
     
     CGFloat x = offset.x;
     if (x > self.perimeter * 1.5) {
@@ -335,40 +341,7 @@
 
 /**逆时针的重用处理*/
 - (void)anticlockwiseDeal {
-//    NSUInteger count = [self.dataSource dataCountForWheel:self];
-//    TTWheelCell * headerVisibleCell = [self.visibleCells firstObject];
-//    if (headerVisibleCell && !headerVisibleCell.visible) { //不可见 添加到不可见数组
-//        [self.visibleCells removeObject:headerVisibleCell];
-//        [self.unvisibleCells insertObject:headerVisibleCell atIndex:0];
-//        [self enqueenCell:headerVisibleCell];
-//    }
-//
-//    //找到右边第一个不可见的cell - 检查是否可见
-//    TTWheelCell * tailUnvisibleCell = [self.unvisibleCells lastObject];
-//
-//    if (tailUnvisibleCell.visible && tailUnvisibleCell) {
-//        [self.unvisibleCells removeObject:tailUnvisibleCell];
-//        [self removeCellFromQueue:tailUnvisibleCell];
-//        [self.visibleCells addObject:tailUnvisibleCell];
-//        //移除-并找到下一个
-//        TTWheelCell *nextUnVisibleCell = [self.unvisibleCells firstObject];
-//        /**寻找下一个不可见的是否是接下来的cell*/
-//        if (nextUnVisibleCell && ((nextUnVisibleCell.dataIndex == tailUnvisibleCell.dataIndex + 1) || (tailUnvisibleCell.dataIndex==count-1 && nextUnVisibleCell.dataIndex==0))) {
-//            NSLog(@"===");
-//        }else {//如果没有，则获取
-//            NSInteger index = (tailUnvisibleCell.dataIndex + 1)%count;
-//            NSInteger partIndex = (tailUnvisibleCell.partIndex + 1)%self.divitionCount;
-//            TTWheelCell * cell =  [self.dataSource cellAtIndex:index forWheel:self];
-//            [self addCell:cell forDataIndex:index andPartIndex:partIndex];
-//            if (!cell.visible) {
-//                [self enqueenCell:cell];
-//                [self.unvisibleCells addObject:cell];
-//            }else {
-//                [self removeCellFromQueue:cell];
-//                [self.visibleCells addObject:cell];
-//            }
-//        }
-//    }
+  
     [self anticlockwiseDealVisibleCell];
     [self anticlockwiseDealUNVisibleCell];
     
@@ -376,6 +349,9 @@
 
 /**一次可能不只一个cell 变得不可见了*/
 - (void)anticlockwiseDealVisibleCell {
+    if (self.allCells.count <2) {
+        return;
+    }
     TTWheelCell * firstObject = [self.allCells objectAtIndex:1];
     if (firstObject && !firstObject.visible) { //不可见 添加到不可见数组
         TTWheelCell *fist = [self.allCells firstObject];
@@ -394,19 +370,22 @@
         NSInteger partIndex = (tailUnvisibleCell.partIndex + 1)%self.divitionCount;
         TTWheelCell * cell =  [self.dataSource cellAtIndex:index forWheel:self];
         NSLog(@"beforcell is %@",cell);
-        [self addCell:cell forDataIndex:index andPartIndex:partIndex];
+        [self addCell:cell forDataIndex:index andPartIndex:partIndex];        
+        cell.hidden = NO;
         NSLog(@"增加%@",cell);
         if ([self.allCells containsObject:cell]) {
             NSLog(@"error");
         }
-        [self.allCells addObject:cell];
+        if (![self.allCells containsObject:cell]) {
+            [self.allCells addObject:cell];
+        }
         [self anticlockwiseDealUNVisibleCell];
     }
 }
 
 /**处理顺时针的重用*/
 - (void)clockwiseDeal {
-  
+
     //找到尾巴的地方的可见cell 的最后一个 并实时判断它是否可见
     [self ClockwiseDealVisibleCell];
     
@@ -416,7 +395,9 @@
 
 /**一次可能不只一个cell 变得不可见了*/
 - (void)ClockwiseDealVisibleCell {
-    
+    if (self.allCells.count <2) {
+        return;
+    }
     TTWheelCell * tailVisibleCell = [self.allCells objectAtIndex:self.allCells.count-2];
     if (tailVisibleCell && !tailVisibleCell.visible) { //不可见 添加到不可见数组
         TTWheelCell *last = [self.allCells lastObject];
@@ -426,14 +407,14 @@
         [self.allCells removeLastObject];
         [self ClockwiseDealVisibleCell];
     }
-    if (!tailVisibleCell) {
-        NSLog(@"____");
-    }
 
     
 }
 /**一次可能不只一个cell 变得可见了*/
 - (void)ClockwiseDealUnVisibleCell {
+    if (self.allCells.count <2) {
+        return;
+    }
     NSUInteger count = [self.dataSource dataCountForWheel:self];
     TTWheelCell * headeUnvisibleCell = [self.allCells firstObject];
     if (headeUnvisibleCell && headeUnvisibleCell.visible) {
@@ -448,30 +429,6 @@
         [self.allCells insertObject:cell atIndex:0];
         [self ClockwiseDealUnVisibleCell];
     }
-    
-    if (!headeUnvisibleCell) {
-        NSLog(@"++++");
-    }
-
-//    if (headeUnvisibleCell && headeUnvisibleCell) {
-//        [self.unvisibleCells removeObject:headeUnvisibleCell];
-//        [self removeCellFromQueue:headeUnvisibleCell];
-//        [self.visibleCells insertObject:headeUnvisibleCell atIndex:0];
-//        //移除-并找到下一个
-//        TTWheelCell *nextUnVisibleCell = [self.unvisibleCells firstObject];
-//        /**寻找下一个不可见的是否是接下来的cell*/
-//        if (nextUnVisibleCell && ((headeUnvisibleCell.dataIndex == headeUnvisibleCell.dataIndex -1) || (headeUnvisibleCell.dataIndex==0 && nextUnVisibleCell.dataIndex==count-1))) {
-//
-//        }else {//如果没有，则获取
-//            NSInteger index = (headeUnvisibleCell.dataIndex-1 + count)%count;
-//            NSInteger partIndex = (headeUnvisibleCell.partIndex -1+self.divitionCount)%self.divitionCount;
-//            TTWheelCell * cell =  [self.dataSource cellAtIndex:index forWheel:self];
-//            [self addCell:cell forDataIndex:index andPartIndex:partIndex];
-//            [self enqueenCell:cell];
-//            [self.unvisibleCells addObject:cell];
-//        }
-//        [self ClockwiseDealUnVisibleCell];
-//    }
 }
 
 - (void)drawRect:(CGRect)rect {

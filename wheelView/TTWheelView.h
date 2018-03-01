@@ -55,6 +55,9 @@
 /**是否停止在某个cell上*/
 @property (nonatomic, assign) BOOL stopInCell;
 
+/**轮盘半径*/
+@property (nonatomic, assign, readonly) CGFloat radiu;
+
 /**
  初始化方法
  
@@ -64,6 +67,8 @@
  */
 - (instancetype)initWithradiu:(CGFloat)radiu divitionCount:(NSUInteger)divitionCount;
 
+/**根据宽度 和最大高度线来生成轮子*/
++ (instancetype)wheelWithCrossWidth:(CGFloat)width widthCrossHeight:(CGFloat)height withPartNumber:(NSInteger)number;
 
 - (TTWheelCell *)dequeenCellForIdentifire:(NSString *)identifire;
 
