@@ -22,6 +22,10 @@ typedef NS_ENUM(NSUInteger,TTWheelCellDirection) {
 
 - (BOOL)wheelCellVisible:(TTWheelCell *)cell;
 
+- (void)scrollToDataIndex:(NSInteger)dataIndex;
+
+- (void)scrollToCell:(TTWheelCell *)cell;
+
 /**获取父亲的当前角度*/
 - (CGFloat)currentAngel;
 

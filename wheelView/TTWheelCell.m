@@ -88,4 +88,9 @@ static int a = 0;
     }
 }
 
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+//    [self.inderDelegate scrollToDataIndex:self.dataIndex];
+    [self.inderDelegate scrollToCell:self];
+}
+
 @end

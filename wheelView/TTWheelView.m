@@ -46,6 +46,7 @@
 @property (nonatomic, assign) CGPoint lastOffset;;
 
 @property (nonatomic, assign) BOOL isStoppingRotate;
+
 @end
 
 @implementation TTWheelView
@@ -84,7 +85,6 @@
 }
 
 - (void)initialUI {
-//    [self initialScrollView];
     [self initialWheelView];
     
     [self mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -131,14 +131,17 @@
 
 
 /**初始化 各个Cell*/
-- (void)cacluteCenterPointerForCells {
-    int i = 0;
+- (void)cacluteCenterPointerForCellsAt:(NSUInteger)dataStart {
+    NSInteger i = 0;
+    NSInteger startDivtin = dataStart % self.divitionCount;
+    i = 0;
     for (; i < self.divitionCount; i ++) {
-        TTWheelCell * cell =  [self.dataSource cellAtIndex:i forWheel:self];
-        [self addCell:cell forDataIndex:i andPartIndex:i];
+        TTWheelCell * cell =  [self.dataSource cellAtIndex:i+dataStart forWheel:self];
+        [self addCell:cell forDataIndex:i+dataStart andPartIndex:i];
         if (![self.allCells containsObject:cell]) {
             [self.allCells addObject:cell];
         }
+        i %= self.divitionCount;
         if (!cell.visible) {
             break;
         }
@@ -146,11 +149,13 @@
     
     if (i < self.divitionCount -1) {
         NSUInteger count = [self.dataSource dataCountForWheel:self];
-        for (int j = (int)self.divitionCount-1; j > i; j --) {
-            NSInteger dataindex = count-(self.divitionCount - 1 - j);
+       NSInteger j = self.divitionCount-1;
+        for (; j != i; j--) {
+            NSInteger dataindex = (startDivtin-(self.divitionCount - 1 - j) +count-1) % count;
             TTWheelCell * cell =  [self.dataSource cellAtIndex:dataindex forWheel:self];
             [self addCell:cell forDataIndex:dataindex andPartIndex:j];
             [self.allCells insertObject:cell atIndex:0];
+            
             if (!cell.visible) {
                 break;
             }
@@ -173,7 +178,8 @@
     cell.radiu = cellRaiud;
     cell.currentAngel = angel;
     
-    cell.center = center;        
+    cell.center = center;
+    
     
     [cell setText:[NSString stringWithFormat:@"%ld",dataIndex]];
     if (!cell.superview) {
@@ -212,7 +218,7 @@
     if (cells.count > 0) {
 
         TTWheelCell *cell = [cells objectAtIndex:0];
-        NSLog(@"cell 被重用 %@",cell);
+//        NSLog(@"cell 被重用 %@",cell);
         [cells removeObject:cell];
         if (cell) {
         }
@@ -251,7 +257,7 @@
         x += self.perimeter;
     }
     scrollView.contentOffset = CGPointMake(x, 0);
-    [self scrollWheelWithLength:x-self.perimeter];
+    [self scrollWheelWithLength:x-self.perimeter andClockWise:velocy<0];
     self.lastOffset = scrollView.contentOffset;
     
     
@@ -321,7 +327,7 @@
 }
 
 /**  角度计算方式以轮盘周长来做计算 -个周长转一圈 */
-- (void)scrollWheelWithLength:(CGFloat)len{
+- (void)scrollWheelWithLength:(CGFloat)len andClockWise:(BOOL)clockWise{
     if (!self.isCanDequeen) {
         return;
     }
@@ -329,12 +335,10 @@
     len = len - self.perimeter * round;
     CGFloat angel = -(len/self.perimeter)* M_PI *2;
     self.wheel.transform = CGAffineTransformMakeRotation(angel);
-    
-    if (_currentAngel > angel) {//逆时针
-         _currentAngel = angel;
+    _currentAngel = angel;
+    if (!clockWise) {//逆时针
         [self anticlockwiseDeal];
     }else {
-        _currentAngel = angel;
         [self clockwiseDeal];
     }
     
@@ -359,7 +363,6 @@
     TTWheelCell * firstObject = [self.allCells objectAtIndex:1];
     if (firstObject && !firstObject.visible) { //不可见 添加到不可见数组
         TTWheelCell *fist = [self.allCells firstObject];
-        NSLog(@"移除%@",fist);
         [self enqueenCell:fist];
         [self.allCells removeObject:fist];
         [self anticlockwiseDealVisibleCell];
@@ -374,7 +377,6 @@
         NSInteger partIndex = (tailUnvisibleCell.partIndex + 1)%self.divitionCount;
         TTWheelCell * cell =  [self.dataSource cellAtIndex:index forWheel:self];
         [self addCell:cell forDataIndex:index andPartIndex:partIndex];
-        NSLog(@"增加%@",cell);
         if (![self.allCells containsObject:cell]) {
             [self.allCells addObject:cell];
         }
@@ -400,20 +402,16 @@
     TTWheelCell * tailVisibleCell = [self.allCells objectAtIndex:self.allCells.count-2];
     if (tailVisibleCell && !tailVisibleCell.visible) { //不可见 添加到不可见数组
         TTWheelCell *last = [self.allCells lastObject];
-        NSLog(@"移除%@",last);
         [self enqueenCell:last];
         
         [self.allCells removeLastObject];
         [self ClockwiseDealVisibleCell];
     }
-
     
 }
 /**一次可能不只一个cell 变得可见了*/
 - (void)ClockwiseDealUnVisibleCell {
-    if (self.allCells.count <2) {
-        return;
-    }
+  
     NSUInteger count = [self.dataSource dataCountForWheel:self];
     TTWheelCell * headeUnvisibleCell = [self.allCells firstObject];
     if (headeUnvisibleCell && headeUnvisibleCell.visible) {
@@ -421,10 +419,7 @@
         NSInteger partIndex = (headeUnvisibleCell.partIndex -1+self.divitionCount)%self.divitionCount;
         TTWheelCell * cell =  [self.dataSource cellAtIndex:index forWheel:self];
         [self addCell:cell forDataIndex:index andPartIndex:partIndex];
-        NSLog(@"增加%@",cell);
-        if ([self.allCells containsObject:cell]) {
-            NSLog(@"error");
-        }
+        if ([self.allCells containsObject:cell]) {        }
         [self.allCells insertObject:cell atIndex:0];
         [self ClockwiseDealUnVisibleCell];
     }
@@ -433,7 +428,7 @@
 - (void)drawRect:(CGRect)rect {
     if (!self.scrollView) {
         [self initialScrollView];
-        [self cacluteCenterPointerForCells];
+        [self cacluteCenterPointerForCellsAt:0];
         self.pageArc = self.pageArc;
     }
 }
@@ -470,6 +465,41 @@
         make.height.equalTo(self.mas_height);
         make.width.mas_equalTo(self.perimeter*rate);
     }];
+}
+
+- (void)scrollToDataIndex:(NSInteger)dataIndex {
+
+    NSArray *cells = [NSArray arrayWithArray:self.allCells];
+    [self.allCells removeAllObjects];
+    for (TTWheelCell *cell in cells) {
+        [self enqueenCell:cell];
+    }
+    self.scrollView.contentOffset = CGPointMake(self.perimeter, 0);
+    self.wheel.transform = CGAffineTransformMakeRotation(0);
+    [self cacluteCenterPointerForCellsAt:dataIndex];
+
+}
+
+- (void)scrollToCell:(TTWheelCell *)cell {
+    
+
+    CGFloat angel =cell.currentAngel + self.currentAngel +  M_PI * 2;
+    angel = fmodl(angel, M_PI*2);
+
+    NSLog(@"angel is %f",angel);
+    
+    if (angel < M_PI*2 && angel >= M_PI) {
+        angel =  angel - M_PI * 2;
+    }
+    CGFloat len = self.perimeter * (angel / (M_PI *2));
+    CGPoint off = self.scrollView.contentOffset;
+    self.lastOffset = off;
+    CGFloat x = off.x + len;
+    
+//    self.scrollView.contentOffset = CGPointMake(x, 0);
+    [self.scrollView setContentOffset:CGPointMake(x, 0) animated:YES];
+//    [self scrollViewDidScroll:self.scrollView];
+    
 }
 
 /*

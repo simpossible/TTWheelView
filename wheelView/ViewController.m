@@ -62,6 +62,11 @@
         cell = [[TTWheelCell alloc] initWithReuserIdentifire:@"fuck"];
         cell.backgroundColor = [UIColor blueColor];
     }
+    if (index%2==0) {
+        cell.direction =TTWheelCellDirectionCenter;
+    }else {
+        cell.direction = TTWheelCellDirectionVerticle;
+    }
     return cell;
 }
 

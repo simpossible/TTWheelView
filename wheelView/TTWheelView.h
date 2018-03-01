@@ -75,4 +75,8 @@
 /**计算子视图的中心点位置*/
 - (CGPoint)pointForAngel:(CGFloat)angel andSubRadiu:(CGFloat)radiu;
 
+- (void)scrollToDataIndex:(NSInteger)dataIndex;
+
+- (void)scrollToCell:(TTWheelCell *)cell;
+
 @end
