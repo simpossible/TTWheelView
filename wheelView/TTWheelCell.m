@@ -81,6 +81,11 @@ static int a = 0;
         CGFloat sAnger = [self.inderDelegate currentAngel];
         self.transform = CGAffineTransformMakeRotation(-sAnger);
     }
+    if (self.hidden ) {
+        if (![self.inderDelegate isStoppingRotate]) {
+            self.hidden = NO;
+        }
+    }
 }
 
 @end

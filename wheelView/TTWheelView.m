@@ -44,6 +44,8 @@
 @property (nonatomic, strong) NSMutableArray * allCells;
 
 @property (nonatomic, assign) CGPoint lastOffset;;
+
+@property (nonatomic, assign) BOOL isStoppingRotate;
 @end
 
 @implementation TTWheelView
@@ -54,6 +56,7 @@
         self.divitionCount = divitionCount;
         self.angelPerCell = M_PI * 2 / divitionCount;
         _pageArc = 0;
+        self.isStoppingRotate = NO;
         
         [self initialData];
         [self initialUI];
@@ -170,14 +173,13 @@
     cell.radiu = cellRaiud;
     cell.currentAngel = angel;
     
-    cell.center = center;
+    cell.center = center;        
     
     [cell setText:[NSString stringWithFormat:@"%ld",dataIndex]];
     if (!cell.superview) {
         [self.wheel addSubview:cell];
     }else {
-//        [cell removeFromSuperview];
-//        [self.wheel addSubview:cell];
+
     }
     
 }
@@ -208,6 +210,7 @@
     }
     NSMutableArray *cells = [self.cellCache objectForKey:identifire];
     if (cells.count > 0) {
+
         TTWheelCell *cell = [cells objectAtIndex:0];
         NSLog(@"cell 被重用 %@",cell);
         [cells removeObject:cell];
@@ -220,10 +223,10 @@
 
 - (void)enqueenCell:(TTWheelCell *)cell {
     NSMutableArray *cells = [self.cellCache objectForKey:cell.identifre];
-    cell.hidden = YES;
     if (!cells) {
         cells = [NSMutableArray array];
     }
+    cell.hidden = YES;
     [cells addObject:cell];
     [self.cellCache setValue:cells forKey:cell.identifre];
 }
@@ -251,6 +254,7 @@
     [self scrollWheelWithLength:x-self.perimeter];
     self.lastOffset = scrollView.contentOffset;
     
+    
     if ((fabs(velocy)<=2) && (velocy != 0) && scrollView.isDecelerating) {
         [self stopForScrollView:scrollView widthVelocy:velocy];
     }
@@ -274,13 +278,13 @@
         CGFloat shouldTime = 1;
         CGFloat time = shouldTime*fabs((rest/widthPerCell));
         
+        self.isStoppingRotate = YES;
         [UIView animateWithDuration:time animations:^{
             [scrollView setContentOffset:CGPointMake(x, offSet.y) animated:NO];
-            //            scrollView.contentOffset = CGPointMake(x, offSet.y);
         } completion:^(BOOL finished) {
-            scrollView.scrollEnabled = YES;
+            self.isStoppingRotate = NO;
         }];
-        
+    
     }
 }
 
@@ -369,13 +373,8 @@
         NSInteger index = (tailUnvisibleCell.dataIndex + 1)%count;
         NSInteger partIndex = (tailUnvisibleCell.partIndex + 1)%self.divitionCount;
         TTWheelCell * cell =  [self.dataSource cellAtIndex:index forWheel:self];
-        NSLog(@"beforcell is %@",cell);
-        [self addCell:cell forDataIndex:index andPartIndex:partIndex];        
-        cell.hidden = NO;
+        [self addCell:cell forDataIndex:index andPartIndex:partIndex];
         NSLog(@"增加%@",cell);
-        if ([self.allCells containsObject:cell]) {
-            NSLog(@"error");
-        }
         if (![self.allCells containsObject:cell]) {
             [self.allCells addObject:cell];
         }

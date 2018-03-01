@@ -25,6 +25,8 @@ typedef NS_ENUM(NSUInteger,TTWheelCellDirection) {
 /**获取父亲的当前角度*/
 - (CGFloat)currentAngel;
 
+- (BOOL)isStoppingRotate;
+
 @end
 
 @interface TTWheelCell : UIView
