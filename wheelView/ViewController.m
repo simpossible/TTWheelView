@@ -28,6 +28,7 @@
 //    self.wheel = [[TTWheelView alloc] initWithradiu:230 divitionCount:10];
     self.wheel = [TTWheelView wheelWithCrossWidth:self.view.frame.size.width widthCrossHeight:50 withPartNumber:5];
     [self.view addSubview:self.wheel];
+    [self.wheel maskWithInnderRadiu:260];
     
     CGFloat off = self.wheel.radiu - 150;
     [self.wheel mas_makeConstraints:^(MASConstraintMaker *make) {

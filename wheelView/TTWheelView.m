@@ -47,6 +47,8 @@
 
 @property (nonatomic, assign) BOOL isStoppingRotate;
 
+@property (nonatomic, strong) CAShapeLayer * maskLayer;
+
 @end
 
 @implementation TTWheelView
@@ -92,14 +94,6 @@
         make.height.mas_equalTo(self.radiu * 2);
     }];
     self.backgroundColor = [UIColor clearColor];
-    [self initialmask];
-}
-
-- (void)initialmask {
-    UIBezierPath *path = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(0, 0, self.radiu*2, self.radiu*2)];
-    CAShapeLayer *shape = [CAShapeLayer layer];
-    shape.path = path.CGPath;
-    self.layer.mask = shape;
 }
 
 - (void)initialScrollView {
@@ -124,9 +118,7 @@
     
     [self.wheel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.edges.mas_equalTo(UIEdgeInsetsZero);
-    }];
-    
-    self.wheel.backgroundColor = [UIColor orangeColor];
+    }];    
 }
 
 
@@ -326,6 +318,10 @@
   
 }
 
+- (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView {
+    self.isStoppingRotate = NO;
+}
+
 /**  角度计算方式以轮盘周长来做计算 -个周长转一圈 */
 - (void)scrollWheelWithLength:(CGFloat)len andClockWise:(BOOL)clockWise{
     if (!self.isCanDequeen) {
@@ -376,6 +372,7 @@
         NSInteger index = (tailUnvisibleCell.dataIndex + 1)%count;
         NSInteger partIndex = (tailUnvisibleCell.partIndex + 1)%self.divitionCount;
         TTWheelCell * cell =  [self.dataSource cellAtIndex:index forWheel:self];
+        tailUnvisibleCell.hidden = NO;
         [self addCell:cell forDataIndex:index andPartIndex:partIndex];
         if (![self.allCells containsObject:cell]) {
             [self.allCells addObject:cell];
@@ -419,6 +416,7 @@
         NSInteger partIndex = (headeUnvisibleCell.partIndex -1+self.divitionCount)%self.divitionCount;
         TTWheelCell * cell =  [self.dataSource cellAtIndex:index forWheel:self];
         [self addCell:cell forDataIndex:index andPartIndex:partIndex];
+        headeUnvisibleCell.hidden = NO;
         if ([self.allCells containsObject:cell]) {        }
         [self.allCells insertObject:cell atIndex:0];
         [self ClockwiseDealUnVisibleCell];
@@ -430,6 +428,9 @@
         [self initialScrollView];
         [self cacluteCenterPointerForCellsAt:0];
         self.pageArc = self.pageArc;
+    }
+    if (!self.maskLayer) {
+        [self maskWithInnderRadiu:0];
     }
 }
 
@@ -485,8 +486,6 @@
 
     CGFloat angel =cell.currentAngel + self.currentAngel +  M_PI * 2;
     angel = fmodl(angel, M_PI*2);
-
-    NSLog(@"angel is %f",angel);
     
     if (angel < M_PI*2 && angel >= M_PI) {
         angel =  angel - M_PI * 2;
@@ -497,9 +496,28 @@
     CGFloat x = off.x + len;
     
 //    self.scrollView.contentOffset = CGPointMake(x, 0);
+    self.isStoppingRotate = YES;
     [self.scrollView setContentOffset:CGPointMake(x, 0) animated:YES];
 //    [self scrollViewDidScroll:self.scrollView];
     
+}
+
+
+- (void)maskWithInnderRadiu:(CGFloat)inner {
+    if (!self.maskLayer) {
+        self.maskLayer = [CAShapeLayer layer];
+        [self.maskLayer setFillRule:kCAFillRuleEvenOdd];
+    }
+    
+    UIBezierPath *path = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(0, 0, self.radiu*2, self.radiu*2)];
+//    UIBezierPath *innerPath = [UIBezierPath bezierPathWithArcCenter:CGPointMake(self.radiu, self.radiu) radius:self.radiu startAngle:0 endAngle:M_PI*2 clockwise:YES];
+    UIBezierPath *innerPath = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(self.radiu-inner, self.radiu-inner, inner*2, inner*2)];
+    
+    [path appendPath:innerPath];
+    self.maskLayer.path = path.CGPath;
+    
+    self.layer.mask = self.maskLayer;
+        
 }
 
 /*

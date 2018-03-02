@@ -79,4 +79,6 @@
 
 - (void)scrollToCell:(TTWheelCell *)cell;
 
+- (void)maskWithInnderRadiu:(CGFloat)inner;
+
 @end
