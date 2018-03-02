@@ -49,6 +49,8 @@
 
 @property (nonatomic, strong) CAShapeLayer * maskLayer;
 
+@property (nonatomic, assign) CGFloat innerMaskRadiu;
+
 @end
 
 @implementation TTWheelView
@@ -84,6 +86,7 @@
     self.perimeter =  M_PI * self.radiu * 2;
     self.cellCache = [NSMutableDictionary dictionary];
     self.allCells = [NSMutableArray array];
+    _innerMaskRadiu = 0;
 }
 
 - (void)initialUI {
@@ -508,8 +511,10 @@
         self.maskLayer = [CAShapeLayer layer];
         [self.maskLayer setFillRule:kCAFillRuleEvenOdd];
     }
+    _innerMaskRadiu = inner;
     
-    UIBezierPath *path = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(0, 0, self.radiu*2, self.radiu*2)];
+    UIBezierPath *path = _maskOutCircle?[UIBezierPath bezierPathWithOvalInRect:CGRectMake(0, 0, self.radiu*2, self.radiu*2)]:[UIBezierPath bezierPathWithRect:CGRectMake(0, 0, self.radiu*2, self.radiu*2)];
+
 //    UIBezierPath *innerPath = [UIBezierPath bezierPathWithArcCenter:CGPointMake(self.radiu, self.radiu) radius:self.radiu startAngle:0 endAngle:M_PI*2 clockwise:YES];
     UIBezierPath *innerPath = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(self.radiu-inner, self.radiu-inner, inner*2, inner*2)];
     
@@ -518,6 +523,13 @@
     
     self.layer.mask = self.maskLayer;
         
+}
+
+- (void)setMaskOutCircle:(BOOL)maskOutCircle {
+    _maskOutCircle = maskOutCircle;
+    if (maskOutCircle) {
+        [self maskWithInnderRadiu:_innerMaskRadiu];
+    }
 }
 
 /*

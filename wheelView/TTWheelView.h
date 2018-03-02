@@ -58,6 +58,9 @@
 /**轮盘半径*/
 @property (nonatomic, assign, readonly) CGFloat radiu;
 
+/**是否裁剪成一个圆*/
+@property (nonatomic, assign) BOOL maskOutCircle;
+
 /**
  初始化方法
  
